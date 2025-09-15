@@ -6,8 +6,6 @@ const signupschema = new mongoose.Schema({
     password: String,
 });
 
-const User = mongoose.model('User', signupschema);
-
 const dataschema =new mongoose.Schema({
     state:String,
     district:String,
@@ -15,8 +13,10 @@ const dataschema =new mongoose.Schema({
     P:Number,
     K:Number,
     ph:Number
-})
-const Data = mongoose.model("data" ,dataschema)
+},{ collection: 'data' })
+
+const Data = mongoose.model("Data" ,dataschema)
+const User = mongoose.model('User', signupschema);
 
 module.exports = {
     User,
