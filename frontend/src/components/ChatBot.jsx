@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, X, SendHorizonal, LoaderCircle, Mic, Volume2, VolumeX } from 'lucide-react';
 
-// A simple function to simulate a bot's response
 const getBotResponse = (userInput) => {
     const text = userInput.toLowerCase();
     if (text.includes('hello') || text.includes('hi')) {

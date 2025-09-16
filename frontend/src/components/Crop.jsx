@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from "axios"
-// --- React Leaflet Imports ---
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css'; // Import Leaflet's CSS
 import L from 'leaflet'; // Import the Leaflet library itself
-// --- Lucide React Icon Imports ---
 import { CloudCog, LoaderCircle } from 'lucide-react';
-
-// --- Leaflet Icon Fix Imports ---
-// This handles a common issue with bundlers like Webpack or Vite
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
-// --- Apply the Leaflet Icon Fix ---
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
     iconRetinaUrl: iconRetinaUrl,
@@ -21,20 +15,18 @@ L.Icon.Default.mergeOptions({
     shadowUrl: shadowUrl,
 });
 
-// --- Helper Components for the Map ---
-
 // Helper component to handle map clicks and set the location marker
 function LocationPicker({ onLocationSelect }) {
     const map = useMapEvents({
         click(e) {
-            onLocationSelect(e.latlng); // Pass the latlng object on click
-            map.flyTo(e.latlng, map.getZoom()); // Center the map on the clicked location
+            onLocationSelect(e.latlng);
+            map.flyTo(e.latlng, map.getZoom());
         },
     });
-    return null; // This component does not render anything itself
+    return null;
 }
 
-// Helper component to recenter the map view when location changes
+
 function RecenterAutomatically({ location }) {
     const map = useMap();
     useEffect(() => {
@@ -45,22 +37,20 @@ function RecenterAutomatically({ location }) {
     return null;
 }
 
-// --- Main Component ---
 export function CropPrediction() {
-    const [location, setLocation] = useState(null); // Will store { latitude, longitude }
+    const [location, setLocation] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
     const [locationError, setLocationError] = useState('');
     const [recommendations, setRecommendations] = useState(null);
     const [isLoadingRecs, setIsLoadingRecs] = useState(false);
 
-    // Default map center (Meerut, India)
     const defaultPosition = [28.9845, 77.7064];
 
     const handleGetCurrentLocation = () => {
         setIsLocating(true);
         setLocationError('');
         setLocation(null);
-        setRecommendations(null); // Clear previous recommendations
+        setRecommendations(null);
 
         if (!navigator.geolocation) {
             setLocationError('Geolocation is not supported by your browser.');
@@ -95,21 +85,15 @@ export function CropPrediction() {
     }; ``
 
     const handleMapClick = (latlng) => {
-        // latlng from leaflet is an object { lat, lng }. Convert to our format.
         setLocation({ latitude: latlng.lat, longitude: latlng.lng });
-        setRecommendations(null); // Clear old recommendations on new location
+        setRecommendations(null);
     };
 
-
-
-    // --- SUBMIT HANDLER to get recommendations ---
     const handleGetRecommendations = async () => {
         if (!location) return;
         setIsLoadingRecs(true);
         setRecommendations(null);
         try {
-
-            // get location 
             const response = await axios.get("http://localhost:3000/api/reverse-geocode", {
                 params: { lat: location.latitude, lon: location.longitude }
             });
@@ -122,17 +106,14 @@ export function CropPrediction() {
             console.log("Prediction API response:", apiResponse.data);
 
             const recommendedCrop = apiResponse.data.crop;
-
-            // Simulate an API call to a backend AI model
             setTimeout(() => {
-                // In a real app, this data would come from your backend based on the location
                 const fetchedRecs = [
                     { crop: recommendedCrop, suitability: 'Recommended', reason: 'Based on AI prediction using soil and weather data.' }
                 ];
                 setRecommendations(fetchedRecs);
                 setIsLoadingRecs(false);
-            }, 1500); // Simulate a 1.5-second network delay
-        }catch (error) {
+            }, 1500);
+        } catch (error) {
             console.error("Error fetching recommendations:", error.message);
         } finally {
             setIsLoadingRecs(false);
@@ -217,7 +198,7 @@ export function CropPrediction() {
                                 <div className="flex justify-between items-center">
                                     <h5 className="text-lg font-semibold text-gray-900">{rec.crop}</h5>
                                     <span className={`px-3 py-1 text-sm font-medium rounded-full ${rec.suitability === 'Excellent' ? 'bg-green-100 text-green-800' :
-                                            rec.suitability === 'Good' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                                        rec.suitability === 'Good' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
                                         }`}>
                                         {rec.suitability}
                                     </span>

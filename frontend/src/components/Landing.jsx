@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from 'react';
-// Import react-leaflet components
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet'; // Import Leaflet library
+import L from 'leaflet'; 
 import { Leaf, BrainCircuit, Bot, Sprout, ShieldCheck, TrendingUp, MapPin, LoaderCircle } from 'lucide-react';
 import Footer from './Footer';
-
-// Import marker icons directly for ES module compatibility
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 import { Prediction } from './disease_pridiction';
 import { CropPrediction } from './Crop';
 import Header from './Header';
-import { Chatbot } from './ChatBot'; // Import the new Chatbot component
+import { Chatbot } from './ChatBot'; 
 
 // FIX: Default Leaflet icon issue with modern bundlers
 // This code ensures that the marker icon images are loaded correctly.
@@ -23,7 +20,6 @@ L.Icon.Default.mergeOptions({
     iconUrl: iconUrl,
     shadowUrl: shadowUrl,
 });
-// Helper component for Benefit Highlights
 const Benefit = ({ icon, title, description }) => (
     <div className="text-center">
         <div className="flex items-center justify-center h-12 w-12 rounded-full bg-green-100 text-green-700 mx-auto mb-4">
@@ -34,8 +30,6 @@ const Benefit = ({ icon, title, description }) => (
     </div>
 );
 
-
-// Helper component to handle map clicks and set the location marker
 function LocationPicker({ onLocationSelect }) {
     const map = useMapEvents({
         click(e) {
