@@ -224,11 +224,7 @@ app.get("/api/reverse-geocode", async (req, res) => {
 app.get("/api/v1/crop_prediction", async (req, res) => {
     try {
         let dist = req.query.dist;
-        console.log("District received:", dist);
-
         dist = dist.trim();
-        console.log("Trimmed district:", dist);
-
         const districtData = await Data.findOne({
             district: { $regex: new RegExp(`^${dist}$`, 'i') }
         });
@@ -242,20 +238,25 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
         const humidity = weatherResponse.data?.current?.humidity;
         const temperature = weatherResponse.data?.current?.temp_c;
         const rainfall = weatherResponse.data?.current?.precip_mm;
-        console.log("humidity", weatherResponse.data?.current?.humidity);  // For debugging
-        console.log("temp",weatherResponse.data?.current.temp_c); 
-        console.log("rainfall",weatherResponse.data?.current?.precip_mm); 
+        if (humidity === undefined || temperature === undefined || rainfall === undefined) {
+            return res.status(500).json({ error: "Incomplete weather data received" });
+        }
 
-
-
-        res.json({
-            district: districtData.district,
-            state: districtData.state,
+        const response = axios.post("http://localhost:5000/predict_crop", {
             N: districtData.N,
             P: districtData.P,
             K: districtData.K,
             ph: districtData.ph,
-        });
+            temperature,
+            humidity,
+            rainfall
+        })
+        response.then(data => {
+            console.log("Crop Prediction:", data.data);
+        })
+        return res.json({
+            crop: response.data.recommended_crop
+        })
         // dist value from data base like all value n, p, k, ph and send these value to model
         // humidity or temprature or rainfall as precip_mm from api http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q=Meerut
         // and send these value to model
