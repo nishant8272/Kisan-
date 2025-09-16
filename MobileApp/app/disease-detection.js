@@ -1,9 +1,14 @@
 // file: app/disease-detection.js
 import React, { useState } from 'react';
-import { View, StyleSheet, Image, ScrollView, Alert } from 'react-native';
+import { View, StyleSheet, Image, ScrollView, Alert, Platform } from 'react-native';
 import { Button, Card, Text, ActivityIndicator, useTheme } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
-import { detectDisease } from './api/mockApi';
+
+// IMPORTANT: Replace with your computer's local IP address.
+// On Windows, run `ipconfig` in cmd. On Mac/Linux, run `ifconfig` in terminal.
+
+const API_URL = 'http://192.168.84.231:3000';
+ // Example: 'http://192.168.1.5:3000'
 
 export default function DiseaseDetectionScreen() {
   const [imageUri, setImageUri] = useState(null);
@@ -34,6 +39,9 @@ export default function DiseaseDetectionScreen() {
     }
   };
 
+  /**
+   * This is the updated function to handle the image upload to your backend.
+   */
   const handleDetect = async () => {
     if (!imageUri) {
       Alert.alert('No Image', 'Please select an image first.');
@@ -41,11 +49,36 @@ export default function DiseaseDetectionScreen() {
     }
     setLoading(true);
     setResult(null);
+
+    // Create FormData to send the image
+    const formData = new FormData();
+    const filename = imageUri.split('/').pop();
+    const match = /\.(\w+)$/.exec(filename);
+    const type = match ? `image/${match[1]}` : `image`;
+
+    // The backend expects the file key to be 'image' as per upload.single('image')
+    formData.append('image', { uri: imageUri, name: filename, type });
+
     try {
-      const detection = await detectDisease(imageUri);
-      setResult(detection);
+      const response = await fetch(`${API_URL}/api/v1/diseasePredict`, {
+        method: 'POST',
+        body: formData,
+        // Do not set Content-Type manually; let fetch add the correct boundary
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // If server returns a known error structure, display it
+        throw new Error(data.error || 'Something went wrong');
+      }
+      
+      // The actual prediction is nested in the 'prediction' object
+      setResult(data.prediction);
+
     } catch (error) {
-      Alert.alert('Detection Failed', 'Could not analyze the image. Please try again.');
+      console.error('Detection error:', error);
+      Alert.alert('Detection Failed', error.message);
     } finally {
       setLoading(false);
     }
@@ -89,20 +122,20 @@ export default function DiseaseDetectionScreen() {
 
       {loading && <ActivityIndicator animating={true} size="large" style={styles.loader} />}
 
-      {result && (
+      {/* This section now uses imageUri for the cover image */}
+      {result && imageUri && (
         <Card style={styles.resultCard}>
-          <Card.Cover source={result.detectedImage} />
+          <Card.Cover source={{ uri: imageUri }} />
           <Card.Title
-            title={result.diseaseName}
-            subtitle={`Confidence: ${result.confidence}`}
+            title={result.predicted_class || 'Unknown Disease'}
+            subtitle={result.confidence ? `Confidence: ${(result.confidence * 100).toFixed(2)}%` : ''}
             titleVariant="headlineSmall"
           />
+           {/* You might need to adjust the fields below based on your ML model's output */}
           <Card.Content>
-            <Text variant="titleMedium">Severity: {result.severity}</Text>
-            <Text variant="titleMedium" style={styles.tipsTitle}>Treatment Advice:</Text>
-            {result.treatment.map((tip, index) => (
-              <Text key={index} style={styles.tipText}>{`\u2022 ${tip}`}</Text>
-            ))}
+            <Text variant="titleMedium" style={styles.tipsTitle}>Details:</Text>
+            <Text style={styles.tipText}>{`\u2022 This appears to be ${result.predicted_class}.`}</Text>
+            {/* Add more details from your result object if available */}
           </Card.Content>
         </Card>
       )}

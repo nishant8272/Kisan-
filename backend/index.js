@@ -218,15 +218,27 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
     try {
         let dist = req.query.dist;
         dist = dist.trim();
-        const districtData = await Data.findOne({
+        // const districtData = await Data.findOne({
+        //     district: { $regex: new RegExp(`^${dist}$`, 'i') }
+        // });
+        // console.log("THE ACTUAL KEYS ARE:", Object.keys(districtData));
+
+        // if (!districtData) {
+        //     return res.status(404).json({ error: `No data found for district: ${dist}` });
+        // }
+        const mongooseDoc = await Data.findOne({
             district: { $regex: new RegExp(`^${dist}$`, 'i') }
         });
-        if (!districtData) {
+
+        if (!mongooseDoc) {
             return res.status(404).json({ error: `No data found for district: ${dist}` });
         }
+        const districtData = mongooseDoc.toObject();
+        console.log("Plain data object:", districtData);
+        console.log("Kharif Defaults:", districtData.Kharif_Defaults); 
 
         const weatherResponse = await axios.get(
-            "http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q=Meerut"
+            "http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q={dist}"
         );
         const humidity = weatherResponse.data?.current?.humidity;
         const temperature = weatherResponse.data?.current?.temp_c;
@@ -235,7 +247,7 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
             return res.status(500).json({ error: "Incomplete weather data received" });
         }
 
-        const response = axios.post("http://localhost:5000/predict_crop", {
+        const response = await axios.post("http://localhost:5000/predict_crop", {
             N: districtData.N,
             P: districtData.P,
             K: districtData.K,
@@ -244,12 +256,29 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
             humidity,
             rainfall
         })
-        response.then(data => {
-            console.log("Crop Prediction:", data.data);
-        })
+
+        const modelPrediction = response.data.recommended_crop;
+        console.log("Model's Raw Prediction:", modelPrediction);
+        let finalRecommendation = modelPrediction; // Start with the model's prediction
+
+        const currentDate = new Date();
+        const currentMonth = currentDate.getMonth(); // 0 = January, 1 = February, etc.
+
+        const rabiCrops = ['Wheat', 'Mustard', 'Garlic', 'ChickPea', 'Lentil', 'Peas', 'Barley'];
+        const kharifCrops = ['Rice', 'Maize', 'Sugarcane', 'Cotton', 'PigeonPeas', 'Jute', 'MothBeans'];
+        
+        if (currentMonth >= 5 && currentMonth <= 9) {
+            if (!kharifCrops.includes(modelPrediction)) {
+                finalRecommendation = `Prediction uncertain. Common options in ${dist} are: ${districtData.Kharif_Defaults}`;
+            }
+        } else {
+            if (!rabiCrops.includes(modelPrediction)) {
+                finalRecommendation = `Prediction uncertain. Common options in ${dist} are: ${districtData.Rabi_Defaults}`;
+            }
+        }
         return res.json({
-            crop: response.data.recommended_crop
-        })
+            crop: finalRecommendation
+        });
     } catch (error) {
         console.error("Error fetching data:", error.message);
         res.status(500).json({ error: "Server error while fetching crop prediction data" });

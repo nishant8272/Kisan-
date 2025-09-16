@@ -2,12 +2,12 @@
 
 // A map to associate crop names with local images
 const cropImages = {
-    Rice: require('../assets/images/rice.jpg'),
-    Wheat: require('../assets/images/wheat.jpg'),
-    Corn: require('../assets/images/corn.jpg'),
+    Rice: require('../app/assets/images/rice.jpg'),
+    Wheat: require('../app/assets/images/wheat.jpg'),
+    Corn: require('../app/assets/images/corn.jpg'),
   };
   
-  const diseaseImage = require('../assets/images/leaf_spot.jpg');
+  const diseaseImage = require('../app/assets/images/leaf_spot.jpg');
   
   /**
    * Simulates a network request

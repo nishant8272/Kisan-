@@ -1,37 +1,48 @@
-// file: app/components/ChatBubble.js
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from 'react-native-paper';
 
-const ChatBubble = ({ message }) => {
-  const theme = useTheme();
-  const isUser = message.sender === 'user';
+export default function ChatBubble({ message }) {
+    const theme = useTheme();
+    const isUser = message.sender === 'user';
 
-  const bubbleStyle = {
-    backgroundColor: isUser ? theme.colors.primaryContainer : theme.colors.surface,
-    alignSelf: isUser ? 'flex-end' : 'flex-start',
-  };
+    const bubbleStyle = {
+        backgroundColor: isUser ? theme.colors.primary : theme.colors.surface,
+        alignSelf: isUser ? 'flex-end' : 'flex-start',
+    };
 
-  const textStyle = {
-    color: theme.colors.onSurface,
-  };
+    const textStyle = {
+        color: isUser ? theme.colors.onPrimary : theme.colors.onSurface,
+    };
 
-  return (
-    <View style={[styles.bubble, bubbleStyle]}>
-      <Text style={textStyle}>{message.text}</Text>
-    </View>
-  );
-};
+    return (
+        <View style={[styles.container, isUser ? styles.userContainer : styles.botContainer]}>
+            <View style={[styles.bubble, bubbleStyle]}>
+                <Text style={[styles.text, textStyle]}>{message.text}</Text>
+            </View>
+        </View>
+    );
+}
 
 const styles = StyleSheet.create({
-  bubble: {
-    maxWidth: '80%',
-    padding: 12,
-    borderRadius: 18,
-    marginVertical: 6,
-    marginHorizontal: 10,
-    elevation: 1,
-  },
+    container: {
+        marginVertical: 5,
+        maxWidth: '80%',
+    },
+    userContainer: {
+        alignSelf: 'flex-end',
+        marginRight: 10,
+    },
+    botContainer: {
+        alignSelf: 'flex-start',
+        marginLeft: 10,
+    },
+    bubble: {
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 20,
+    },
+    text: {
+        fontSize: 16,
+    },
 });
-
-export default ChatBubble;

@@ -2,26 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, X, SendHorizonal, LoaderCircle, Mic, Volume2, VolumeX } from 'lucide-react';
 
-// A simple function to simulate a bot's response
-const getBotResponse = (userInput) => {
-    const text = userInput.toLowerCase();
-    if (text.includes('hello') || text.includes('hi')) {
-        return 'Hello! How can I assist you with your farming needs today? You can ask me about fertilizers, irrigation, or crop diseases.';
-    }
-    if (text.includes('fertilizer')) {
-        return 'For better yield, a balanced N-P-K (Nitrogen, Phosphorus, Potassium) fertilizer is recommended. The exact ratio depends on your soil test results and the crop you are growing.';
-    }
-    if (text.includes('irrigation') || text.includes('water')) {
-        return 'Drip irrigation is highly efficient for most crops as it minimizes water evaporation and delivers water directly to the plant roots. Watering in the early morning is ideal.';
-    }
-    if (text.includes('disease') || text.includes('pest')) {
-        return 'Early detection is key. You can use our "Disease Prediction" tool by uploading a photo of the leaf. Common organic pesticides include neem oil spray.';
-    }
-    if (text.includes('thank')) {
-        return 'You\'re welcome! Is there anything else I can help you with?';
-    }
-    return "I'm sorry, I'm not sure how to answer that yet. Try asking about fertilizers, irrigation, or pests.";
-};
+// API endpoint for the chatbot backend
+const CHATBOT_API_URL = "http://localhost:3000/chat";
 
 export const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -38,7 +20,7 @@ export const Chatbot = () => {
     // --- Voice Synthesis (Text-to-Speech) ---
     const speak = (text) => {
         if (isMuted || !window.speechSynthesis) return;
-        window.speechSynthesis.cancel(); // Stop any previous speech
+        window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         window.speechSynthesis.speak(utterance);
     };
@@ -75,11 +57,9 @@ export const Chatbot = () => {
 
         recognitionRef.current = recognition;
 
-        // Cleanup function
         return () => {
             window.speechSynthesis.cancel();
         };
-
     }, []);
 
     const handleToggleListening = () => {
@@ -91,36 +71,54 @@ export const Chatbot = () => {
         setIsListening(!isListening);
     };
 
-
     // Function to scroll to the bottom of the messages
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    // Scroll to bottom whenever messages change
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
-
-    const handleSendMessage = () => {
+    // --- MODIFIED: Send message to backend API ---
+    const handleSendMessage = async () => {
         if (inputValue.trim() === '') return;
-        window.speechSynthesis.cancel(); // Stop speech if user sends message manually
+        window.speechSynthesis.cancel();
 
-        // Add user message to chat
         const userMessage = { sender: 'user', text: inputValue };
         setMessages(prevMessages => [...prevMessages, userMessage]);
+        const currentInput = inputValue; // Capture current input before clearing
         setInputValue('');
         setIsLoading(true);
 
-        // Simulate bot response
-        setTimeout(() => {
-            const botResponseText = getBotResponse(inputValue);
+        try {
+            console.log("Sending to chatbot API:", currentInput);
+            const response = await fetch(CHATBOT_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: currentInput }), // Use the captured input
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const botResponseText = data.answer || "Sorry, I couldn't get a response.";
+            
             const botMessage = { sender: 'bot', text: botResponseText };
             setMessages(prevMessages => [...prevMessages, botMessage]);
+            speak(botResponseText);
+
+        } catch (error) {
+            console.error("Failed to fetch from chatbot API:", error);
+            const errorMessage = { sender: 'bot', text: "Sorry, I'm having trouble connecting. Please try again later." };
+            setMessages(prevMessages => [...prevMessages, errorMessage]);
+        } finally {
             setIsLoading(false);
-            speak(botResponseText); // Speak the bot's response
-        }, 1500); // Simulate network delay
+        }
     };
 
     const handleKeyPress = (e) => {
@@ -128,7 +126,6 @@ export const Chatbot = () => {
             handleSendMessage();
         }
     };
-
 
     return (
         <>
@@ -140,7 +137,7 @@ export const Chatbot = () => {
                         <h3 className="font-bold text-lg">AgriBot Assistant</h3>
                         <div className="flex items-center gap-2">
                              <button onClick={() => setIsMuted(!isMuted)} className="hover:opacity-75">
-                                {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
+                                 {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
                             </button>
                             <button onClick={() => { setIsOpen(false); window.speechSynthesis.cancel(); }} className="hover:opacity-75">
                                 <X size={24} />
@@ -186,15 +183,20 @@ export const Chatbot = () => {
                             onKeyPress={handleKeyPress}
                             placeholder={isListening ? "Listening..." : "Ask a question..."}
                             className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                            disabled={isListening}
+                            disabled={isListening || isLoading}
                         />
                         <button 
                             onClick={handleToggleListening} 
                             className={`ml-2 p-3 rounded-full transition-colors ${isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+                            disabled={isLoading}
                         >
                             <Mic size={20} />
                         </button>
-                        <button onClick={handleSendMessage} className="ml-2 bg-green-600 text-white p-3 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors">
+                        <button 
+                            onClick={handleSendMessage} 
+                            className="ml-2 bg-green-600 text-white p-3 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors disabled:opacity-50"
+                            disabled={isLoading}
+                        >
                             <SendHorizonal size={20} />
                         </button>
                     </div>
