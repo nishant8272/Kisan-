@@ -225,12 +225,24 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
     try {
         let dist = req.query.dist;
         dist = dist.trim();
-        const districtData = await Data.findOne({
+        // const districtData = await Data.findOne({
+        //     district: { $regex: new RegExp(`^${dist}$`, 'i') }
+        // });
+        // console.log("THE ACTUAL KEYS ARE:", Object.keys(districtData));
+
+        // if (!districtData) {
+        //     return res.status(404).json({ error: `No data found for district: ${dist}` });
+        // }
+        const mongooseDoc = await Data.findOne({
             district: { $regex: new RegExp(`^${dist}$`, 'i') }
         });
-        if (!districtData) {
+
+        if (!mongooseDoc) {
             return res.status(404).json({ error: `No data found for district: ${dist}` });
         }
+        const districtData = mongooseDoc.toObject();
+        console.log("Plain data object:", districtData);
+        console.log("Kharif Defaults:", districtData.Kharif_Defaults); 
 
         const weatherResponse = await axios.get(
             "http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q={dist}"
@@ -251,10 +263,6 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
             humidity,
             rainfall
         })
-        // console.log("Crop Prediction:", response.data);
-        // return res.json({
-        //     crop: response.data.recommended_crop
-        // });
 
         const modelPrediction = response.data.recommended_crop;
         console.log("Model's Raw Prediction:", modelPrediction);
@@ -263,34 +271,21 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth(); // 0 = January, 1 = February, etc.
 
-        // Define the crops for each major season
         const rabiCrops = ['Wheat', 'Mustard', 'Garlic', 'ChickPea', 'Lentil', 'Peas', 'Barley'];
         const kharifCrops = ['Rice', 'Maize', 'Sugarcane', 'Cotton', 'PigeonPeas', 'Jute', 'MothBeans'];
         
-        // Check for Kharif Season (June to October -> months 5 to 9)
         if (currentMonth >= 5 && currentMonth <= 9) {
-            // If the model's prediction is NOT a valid Kharif crop, it's out of season.
             if (!kharifCrops.includes(modelPrediction)) {
-                // Overwrite the wrong prediction with a sensible default for the season.
-                finalRecommendation = "Sugarcane or Rice (contact local advisory for best choice)";
+                finalRecommendation = `Prediction uncertain. Common options in ${dist} are: ${districtData.Kharif_Defaults}`;
             }
-        }
-        // Check for Rabi Season (October to March -> months 9, 10, 11, 0, 1, 2)
-        else {
-            // If the model's prediction is NOT a valid Rabi crop, it's out of season.
+        } else {
             if (!rabiCrops.includes(modelPrediction)) {
-                // Overwrite the wrong prediction.
-                console.log(`Filtering out-of-season Kharif crop: ${modelPrediction}`);
-                finalRecommendation = "Wheat (most likely Rabi crop)";
+                finalRecommendation = `Prediction uncertain. Common options in ${dist} are: ${districtData.Rabi_Defaults}`;
             }
         }
         return res.json({
             crop: finalRecommendation
         });
-        // dist value from data base like all value n, p, k, ph and send these value to model
-        // humidity or temprature or rainfall as precip_mm from api http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q=Meerut
-        // and send these value to model
-        // model resonse back with crop name
     } catch (error) {
         console.error("Error fetching data:", error.message);
         res.status(500).json({ error: "Server error while fetching crop prediction data" });
