@@ -111,30 +111,7 @@ app.post('/api/v1/signin', async (req, res) => {
 })
 
 
-/**
- * Disease Prediction Endpoint
- * 
- * POST /api/v1/diseasePredict
- * 
- * Description: Predicts plant disease from uploaded image
- * 
- * Request:
- * - Method: POST
- * - Content-Type: multipart/form-data
- * - Body: Form data with 'image' field containing image file
- * 
- * Response:
- * - Success (200): { success: true, message: string, prediction: { predicted_class: string, confidence: number } }
- * - Error (400): { error: string } - No file or invalid file type
- * - Error (503): { error: string } - ML service unavailable
- * - Error (500): { error: string } - Internal server error
- * 
- * Requirements:
- * - Image file must be uploaded as 'image' field
- * - Supported formats: jpg, jpeg, png, gif, etc.
- * - Max file size: 10MB
- * - ML service must be running on ML_SERVICE_URL (default: http://localhost:5000)
- */
+
 app.post("/api/v1/diseasePredict", upload.single('image'), async (req, res) => {
     try {
         // Check if file was uploaded
@@ -210,15 +187,31 @@ app.post("/api/v1/diseasePredict", upload.single('image'), async (req, res) => {
 app.get("/api/reverse-geocode", async (req, res) => {
     try {
         const { lat, lon } = req.query;
-        console.log(req.query)
-        const response = await axios.get("https://nominatim.openstreetmap.org/reverse", {
-            params: { lat, lon, format: "json" },
-            headers: { "User-Agent": "my-app/1.0 (myemail@example.com)" }
+        console.log("Incoming query:", req.query);
+    
+        const response = await axios.get("https://us1.locationiq.com/v1/reverse", {
+          params: {
+            key: "pk.bfd5fddfb2ac4ce5d7b2134950a5f453", // <-- your API key
+            lat,
+            lon,
+            format: "json"
+          },
+          headers: {
+            "User-Agent": "my-app/1.0 (myemail@example.com)" // required by LocationIQ
+          }
         });
-        res.json(response.data);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
+    console.log(response.data)
+        // If you only care about district, extract it:
+        const district = response.data?.address?.state_district || response.data?.address?.county || null;
+    
+        res.json({
+          raw: response.data,
+          district
+        });
+      } catch (error) {
+        console.error("Error in reverse geocoding:", error.response?.data || error.message);
+        res.status(500).json({ error: "Failed to reverse geocode" });
+      }
 });
 
 app.get("/api/v1/crop_prediction", async (req, res) => {
@@ -257,24 +250,33 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
         return res.json({
             crop: response.data.recommended_crop
         })
-        // dist value from data base like all value n, p, k, ph and send these value to model
-        // humidity or temprature or rainfall as precip_mm from api http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q=Meerut
-        // and send these value to model
-        // model resonse back with crop name
     } catch (error) {
         console.error("Error fetching data:", error.message);
         res.status(500).json({ error: "Server error while fetching crop prediction data" });
     }
 });
 
-
+app.post('/chat', async (req, res) => {
+    const { query } = req.body; 
+    if (!query) {
+        return res.status(400).json({ error: "Query is required" });
+    }
+    try {
+      const response = await axios.post('http://localhost:5000/chat', { query });
+      res.json({ answer: response.data.answer });
+    } catch (error) {   
+        console.error('Error communicating with chatbot service:', error.message);
+        res.status(500).json({ error: "Failed to get response from chatbot service" });
+    }
+});
 
 async function main() {
     if (process.env.MONGODB_URL === undefined) {
         throw new Error("MONGODB_URL is not defined");
     }
+    console.log("hello")
     await mongoose.connect(process.env.MONGODB_URL).then(() => {
-        console.log
+        console.log("connect")
     });
     app.listen(PORT, () => {
         console.log("Server is running on port 3000");
