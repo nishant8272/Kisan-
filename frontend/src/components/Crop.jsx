@@ -52,7 +52,7 @@ export function CropPrediction() {
     const [locationError, setLocationError] = useState('');
     const [recommendations, setRecommendations] = useState(null);
     const [isLoadingRecs, setIsLoadingRecs] = useState(false);
-    
+
     // Default map center (Meerut, India)
     const defaultPosition = [28.9845, 77.7064];
 
@@ -92,7 +92,7 @@ export function CropPrediction() {
                 setIsLocating(false);
             }
         );
-    };
+    }; ``
 
     const handleMapClick = (latlng) => {
         // latlng from leaflet is an object { lat, lng }. Convert to our format.
@@ -100,38 +100,43 @@ export function CropPrediction() {
         setRecommendations(null); // Clear old recommendations on new location
     };
 
-      
-      
-      // --- SUBMIT HANDLER to get recommendations ---
-      const handleGetRecommendations =async() => {
-          if (!location) return;
-          // get location 
-          const response = await axios.get("http://localhost:3000/api/reverse-geocode", {
-            params: { lat: location.latitude, lon: location.longitude }
-          });
-          console.log(response.data)
-         
-          const apiResponse = await axios.get("http://localhost:3000/api/v1/crop_prediction", {
-            params: { dist: response.data.address.state_district } // pass district from reverse geocode
-          });
-          
-          console.log("Prediction API response:", apiResponse.data);
-          
-      
+
+
+    // --- SUBMIT HANDLER to get recommendations ---
+    const handleGetRecommendations = async () => {
+        if (!location) return;
         setIsLoadingRecs(true);
         setRecommendations(null);
-        
-        // Simulate an API call to a backend AI model
-        setTimeout(() => {
-            // In a real app, this data would come from your backend based on the location
-            const fetchedRecs = [
-                { crop: 'Sugarcane', suitability: 'Excellent', reason: 'Ideal soil type (loam) and climate for this region.' },
-                { crop: 'Wheat', suitability: 'Good', reason: 'Favorable winter temperatures and suitable for the Indo-Gangetic plain.' },
-                { crop: 'Rice (Basmati)', suitability: 'Moderate', reason: 'Requires significant irrigation, but the soil is adequate.' },
-            ];
-            setRecommendations(fetchedRecs);
+        try {
+
+            // get location 
+            const response = await axios.get("http://localhost:3000/api/reverse-geocode", {
+                params: { lat: location.latitude, lon: location.longitude }
+            });
+            console.log(response.data)
+
+            const apiResponse = await axios.get("http://localhost:3000/api/v1/crop_prediction", {
+                params: { dist: response.data.address.state_district } // pass district from reverse geocode
+            });
+
+            console.log("Prediction API response:", apiResponse.data);
+
+            const recommendedCrop = apiResponse.data.crop;
+
+            // Simulate an API call to a backend AI model
+            setTimeout(() => {
+                // In a real app, this data would come from your backend based on the location
+                const fetchedRecs = [
+                    { crop: recommendedCrop, suitability: 'Recommended', reason: 'Based on AI prediction using soil and weather data.' }
+                ];
+                setRecommendations(fetchedRecs);
+                setIsLoadingRecs(false);
+            }, 1500); // Simulate a 1.5-second network delay
+        }catch (error) {
+            console.error("Error fetching recommendations:", error.message);
+        } finally {
             setIsLoadingRecs(false);
-        }, 1500); // Simulate a 1.5-second network delay
+        }
     };
 
     return (
@@ -186,7 +191,7 @@ export function CropPrediction() {
                 )}
             </button>
             {locationError && <p className="text-red-500 text-sm text-center my-2">{locationError}</p>}
-            
+
             <button
                 onClick={handleGetRecommendations}
                 className="w-full mt-2 bg-green-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
@@ -211,10 +216,9 @@ export function CropPrediction() {
                             <div key={rec.crop} className="bg-gray-50 border border-gray-200 p-4 rounded-lg text-left">
                                 <div className="flex justify-between items-center">
                                     <h5 className="text-lg font-semibold text-gray-900">{rec.crop}</h5>
-                                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                                        rec.suitability === 'Excellent' ? 'bg-green-100 text-green-800' :
-                                        rec.suitability === 'Good' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
-                                    }`}>
+                                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${rec.suitability === 'Excellent' ? 'bg-green-100 text-green-800' :
+                                            rec.suitability === 'Good' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
+                                        }`}>
                                         {rec.suitability}
                                     </span>
                                 </div>

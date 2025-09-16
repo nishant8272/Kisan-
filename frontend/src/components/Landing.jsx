@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-
 // Import react-leaflet components
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet'; // Import Leaflet library
-
 import { Leaf, BrainCircuit, Bot, Sprout, ShieldCheck, TrendingUp, MapPin, LoaderCircle } from 'lucide-react';
 import Footer from './Footer';
 
@@ -15,8 +13,6 @@ import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 import { Prediction } from './disease_pridiction';
 import { CropPrediction } from './Crop';
 import Header from './Header';
-
-// --- ADD THIS LINE ---
 import { Chatbot } from './ChatBot'; // Import the new Chatbot component
 
 // FIX: Default Leaflet icon issue with modern bundlers
@@ -43,16 +39,13 @@ const Benefit = ({ icon, title, description }) => (
 function LocationPicker({ onLocationSelect }) {
     const map = useMapEvents({
         click(e) {
-            onLocationSelect(e.latlng); // Pass the latlng object on click
-            map.flyTo(e.latlng, map.getZoom()); // Center the map on the clicked location
+            onLocationSelect(e.latlng);
+            map.flyTo(e.latlng, map.getZoom());
         },
     });
-    return null; // This component does not render anything itself
+    return null;
 }
 
-
-
-// Main App Component
 export default function Landing() {
     const [activeTab, setActiveTab] = useState('recommendation');
 
@@ -138,7 +131,6 @@ export default function Landing() {
             </main>
             <Footer />
 
-            {/* --- ADD THIS LINE --- */}
             <Chatbot /> {/* Add the Chatbot component here */}
         </div>
     );
