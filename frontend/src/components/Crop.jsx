@@ -97,12 +97,12 @@ export function CropPrediction() {
             const response = await axios.get("http://localhost:3000/api/reverse-geocode", {
                 params: { lat: location.latitude, lon: location.longitude }
             });
-            console.log(response.data)
+            console.log("response",response.data)
 
             const apiResponse = await axios.get("http://localhost:3000/api/v1/crop_prediction", {
-                params: { dist: response.data.district } // pass district from reverse geocode
+                params: { dist: response.data.address?.state_district } // pass district from reverse geocode
             });
-
+            console.log("first")
             console.log("Prediction API response:", apiResponse.data);
 
             const recommendedCrop = apiResponse.data.crop;

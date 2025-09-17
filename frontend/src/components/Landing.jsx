@@ -12,6 +12,7 @@ import { Prediction } from './disease_pridiction';
 import { CropPrediction } from './Crop';
 import Header from './Header';
 import { Chatbot } from './ChatBot';
+import WeatherWidget from "./WeatherWidget";
 import Market from './Market';
 
 // FIX: Default Leaflet icon issue with modern bundlers
@@ -65,9 +66,89 @@ const MarketRateCard = ({ market, state, minPrice, maxPrice, modalPrice }) => (
 
 export default function Landing() {
     const [activeTab, setActiveTab] = useState('recommendation');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [marketData, setMarketData] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    
-   
+    // In a real app, this would be a fetch() call to your backend.
+    const getMockMarketData = (cropName) => {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                if (cropName.toLowerCase() === 'error') {
+                    reject('Failed to fetch data. Please try again.');
+                }
+                // Dummy data for demonstration
+                const mockData = {
+                    wheat: [
+                        { market: 'Meerut Mandi', state: 'Uttar Pradesh', minPrice: 2100, maxPrice: 2250, modalPrice: 2180 },
+                        { market: 'Saharanpur Mandi', state: 'Uttar Pradesh', minPrice: 2080, maxPrice: 2200, modalPrice: 2150 },
+                        { market: 'Ludhiana Mandi', state: 'Punjab', minPrice: 2150, maxPrice: 2300, modalPrice: 2220 },
+                        { market: 'Amritsar Mandi', state: 'Punjab', minPrice: 2120, maxPrice: 2280, modalPrice: 2200 },
+                    ],
+                    rice: [
+                        { market: 'Gorakhpur Mandi', state: 'Uttar Pradesh', minPrice: 3100, maxPrice: 3300, modalPrice: 3220 },
+                        { market: 'Varanasi Mandi', state: 'Uttar Pradesh', minPrice: 3050, maxPrice: 3250, modalPrice: 3150 },
+                        { market: 'Patiala Mandi', state: 'Punjab', minPrice: 3180, maxPrice: 3380, modalPrice: 3270 },
+                        { market: 'Amritsar Mandi', state: 'Punjab', minPrice: 3200, maxPrice: 3400, modalPrice: 3300 },
+                    ],
+                    sugarcane: [
+                        { market: 'Muzaffarnagar Mandi', state: 'Uttar Pradesh', minPrice: 340, maxPrice: 360, modalPrice: 350 },
+                        { market: 'Lucknow Mandi', state: 'Uttar Pradesh', minPrice: 330, maxPrice: 345, modalPrice: 338 },
+                        { market: 'Gurdaspur Mandi', state: 'Punjab', minPrice: 325, maxPrice: 340, modalPrice: 333 },
+                    ],
+                    maize: [
+                        { market: 'Varanasi Mandi', state: 'Uttar Pradesh', minPrice: 1700, maxPrice: 1850, modalPrice: 1780 },
+                        { market: 'Gorakhpur Mandi', state: 'Uttar Pradesh', minPrice: 1650, maxPrice: 1800, modalPrice: 1725 },
+                        { market: 'Amritsar Mandi', state: 'Punjab', minPrice: 1680, maxPrice: 1820, modalPrice: 1750 },
+                    ],
+
+                    // === Pulses split ===
+                    chana: [
+                        { market: 'Kanpur Mandi', state: 'Uttar Pradesh', minPrice: 5200, maxPrice: 5500, modalPrice: 5350 },
+                        { market: 'Lucknow Mandi', state: 'Uttar Pradesh', minPrice: 5250, maxPrice: 5550, modalPrice: 5400 },
+                        { market: 'Amritsar Mandi', state: 'Punjab', minPrice: 5300, maxPrice: 5600, modalPrice: 5450 },
+                    ],
+                    masoor: [
+                        { market: 'Varanasi Mandi', state: 'Uttar Pradesh', minPrice: 5600, maxPrice: 5850, modalPrice: 5720 },
+                        { market: 'Ludhiana Mandi', state: 'Punjab', minPrice: 5550, maxPrice: 5800, modalPrice: 5675 },
+                    ],
+                    arhar: [
+                        { market: 'Gorakhpur Mandi', state: 'Uttar Pradesh', minPrice: 6500, maxPrice: 6800, modalPrice: 6650 },
+                        { market: 'Amritsar Mandi', state: 'Punjab', minPrice: 6400, maxPrice: 6700, modalPrice: 6550 },
+                    ],
+                    moong: [
+                        { market: 'Lucknow Mandi', state: 'Uttar Pradesh', minPrice: 7200, maxPrice: 7500, modalPrice: 7350 },
+                        { market: 'Jalandhar Mandi', state: 'Punjab', minPrice: 7100, maxPrice: 7400, modalPrice: 7250 },
+                    ],
+                    urad: [
+                        { market: 'Kanpur Mandi', state: 'Uttar Pradesh', minPrice: 6800, maxPrice: 7100, modalPrice: 6950 },
+                        { market: 'Amritsar Mandi', state: 'Punjab', minPrice: 6700, maxPrice: 7000, modalPrice: 6850 },
+                    ],
+                };
+
+                resolve(mockData[cropName.toLowerCase()] || []);
+            }, 1500); // Simulate 1.5 second network delay
+        });
+    };
+
+    const handleSearch = async (e) => {
+        e.preventDefault();
+        if (!searchQuery) return;
+
+        setIsLoading(true);
+        setError(null);
+        setMarketData([]);
+
+        try {
+            const data = await getMockMarketData(searchQuery);
+            setMarketData(data);
+        } catch (err) {
+            setError(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="bg-gray-50 font-sans antialiased text-gray-900">
@@ -156,6 +237,22 @@ export default function Landing() {
 
                                 {activeTab === 'prediction' && <Prediction />}
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ===== Weather Section ===== */}
+                <section id="weather" className="py-20 bg-gradient-to-r from-blue-50 via-white to-blue-50">
+                    <div className="container mx-auto px-6 text-center">
+                        <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+                            🌦️ Real-Time Weather Updates
+                        </h2>
+                        <p className="text-gray-600 mb-12 max-w-2xl mx-auto">
+                            Stay informed with the latest weather insights tailored for your farming location.
+                        </p>
+
+                        <div className="max-w-lg mx-auto">
+                        <WeatherWidget district="meerut" />
                         </div>
                     </div>
                 </section>

@@ -13,7 +13,11 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const PORT = process.env.PORT || 3000;
+const OpenAI = require("openai");
 
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 app.use(cors());
 app.use(express.json());
 
@@ -52,7 +56,7 @@ app.post('/api/v1/signup', async (req, res) => {
     // define zod schema for validation
     const signupzod = z.object({
         username: z.string(),
-        email: z.string(), 
+        email: z.string(),
         password: z.string().min(6).max(12),
     })
     const validate = signupzod.safeParse(req.body);
@@ -108,78 +112,6 @@ app.post('/api/v1/signin', async (req, res) => {
     }
 })
 
-app.post("/api/v1/diseasePredict", upload.single('image'), async (req, res) => {
-    try {
-        // Check if file was uploaded
-        if (!req.file) {
-            return res.status(400).json({
-                error: "No image file provided. Please upload an image file."
-            });
-        }
-
-        // Validate file type
-        if (!req.file.mimetype.startsWith('image/')) {
-            // Clean up uploaded file
-            fs.unlinkSync(req.file.path);
-            return res.status(400).json({
-                error: "Invalid file type. Only image files are allowed."
-            });
-        }
-
-        // ML service URL (assuming it's running on port 5000)
-        const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5000';
-
-        // Create form data to send to ML service
-        const formData = new FormData();
-        formData.append('file', fs.createReadStream(req.file.path), {
-            filename: req.file.originalname,
-            contentType: req.file.mimetype
-        });
-
-        // Send request to ML service
-        const response = await axios.post(`${ML_SERVICE_URL}/predict_disease`, formData, {
-            headers: {
-                ...formData.getHeaders()
-            },
-            timeout: 30000 // 30 second timeout
-        });
-
-        // Clean up uploaded file
-        fs.unlinkSync(req.file.path);
-
-        // Return prediction result
-        res.json({
-            success: true,
-            message: "Disease prediction completed successfully",
-            prediction: response.data
-        });
-
-    } catch (error) {
-        // Clean up uploaded file if it exists
-        if (req.file && fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
-        }
-
-        console.error('Disease prediction error:', error.message);
-
-        if (error.code === 'ECONNREFUSED') {
-            return res.status(503).json({
-                error: "ML service is not available. Please try again later."
-            });
-        }
-
-        if (error.response) {
-            return res.status(error.response.status).json({
-                error: error.response.data.error || "ML service error"
-            });
-        }
-
-        res.status(500).json({
-            error: "Internal server error during disease prediction"
-        });
-    }
-});
-
 app.get("/api/reverse-geocode", async (req, res) => {
     try {
         const { lat, lon } = req.query;
@@ -196,7 +128,7 @@ app.get("/api/reverse-geocode", async (req, res) => {
 
 app.get("/api/v1/crop_prediction", async (req, res) => {
     try {
-        let dist = req.query.dist;
+        let dist = req.query.dist;  
         dist = dist.trim();
         const mongooseDoc = await Data.findOne({
             District_Name: { $regex: new RegExp(`^${dist}$`, 'i') }
@@ -206,19 +138,18 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
             return res.status(404).json({ error: `No data found for district: ${dist}` });
         }
         const districtData = mongooseDoc.toObject();
-        console.log("Plain data object:", districtData);
-        console.log("Kharif Defaults:", districtData.Kharif_Defaults);
-
+        // console.log("Plain data object:", districtData);
+        // console.log("Kharif Defaults:", districtData.Kharif_Defaults);
         const weatherResponse = await axios.get(
             `http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q=${dist}`
-        );
+        ); 
         const humidity = weatherResponse.data?.current?.humidity;
         const temperature = weatherResponse.data?.current?.temp_c;
         const rainfall = weatherResponse.data?.current?.precip_mm;
         if (humidity === undefined || temperature === undefined || rainfall === undefined) {
             return res.status(500).json({ error: "Incomplete weather data received" });
         }
-
+        
         const response = await axios.post("http://localhost:5000/predict_crop", {
             N: districtData.N_Value,
             P: districtData.P_Value,
@@ -228,13 +159,13 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
             humidity,
             rainfall
         })
-
+        
         const modelPrediction = response.data.recommended_crop;
         console.log("Model's Raw Prediction:", modelPrediction);
         let finalRecommendation = modelPrediction;
 
         const currentDate = new Date();
-        const currentMonth = currentDate.getMonth(); 
+        const currentMonth = currentDate.getMonth();
 
         const rabiCrops = ['Wheat', 'Mustard', 'Garlic', 'ChickPea', 'Lentil', 'Peas', 'Barley'];
         const kharifCrops = ['Rice', 'Maize', 'Sugarcane', 'Cotton', 'PigeonPeas', 'Jute', 'MothBeans'];
@@ -248,6 +179,7 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
                 finalRecommendation = `${districtData.Rabi_Defaults}`;
             }
         }
+        console.log(finalRecommendation)
         return res.json({
             crop: finalRecommendation
         });
@@ -258,16 +190,105 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
 });
 
 app.post('/chat', async (req, res) => {
-    const { query } = req.body; 
+    const { query } = req.body;
     if (!query) {
         return res.status(400).json({ error: "Query is required" });
     }
     try {
-      const response = await axios.post('http://localhost:5000/chat', { query });
-      res.json({ answer: response.data.answer });
-    } catch (error) {   
+        const response = await axios.post('http://localhost:5000/chat', { query });
+        console.log(response)
+        res.json({ answer: response.data.answer });
+    } catch (error) {
         console.error('Error communicating with chatbot service:', error.message);
         res.status(500).json({ error: "Failed to get response from chatbot service" });
+    }
+});
+
+app.post("/api/v1/predict-disease-detailed", upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "No image file uploaded." });
+        }
+        // --- Step 1: Encode the image in base64 ---
+        const imageBuffer = fs.readFileSync(req.file.path);
+        const base64Image = `data:${req.file.mimetype};base64,${imageBuffer.toString('base64')}`;
+
+        // --- Step 2: Ask GPT directly to detect disease & give advisory ---
+        const prompt = `You are an expert agronomist advising a farmer in India. 
+         Analyze the provided crop leaf image, identify the most likely disease, and generate a JSON advisory.
+         
+         The JSON must have these keys:
+         - "disease_name"
+         - "summary"
+         - "symptoms"
+         - "organic_treatment"
+         - "chemical_treatment"
+         - "prevention_tips"
+         
+         Rules:
+         - Use Hindi (Devanagari) first, then English translation in parentheses.
+         - Summary should be 1 sentence.
+         - Symptoms, treatments, and prevention should be arrays of 1-2 short bullet points.
+         - Respond only with valid JSON.`;
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4.1-mini",
+            messages: [
+                { role: "system", content: "You are an expert agronomist AI that responds only in valid JSON." },
+                {
+                    role: "user",
+                    content: [
+                        { type: "text", text: prompt },
+                        { type: "image_url", image_url: { url: base64Image } }
+                    ]
+                }
+            ],
+            response_format: { type: "json_object" }
+        });
+        
+        const advisoryData = JSON.parse(completion.choices[0].message.content);
+        res.json({ advisory: advisoryData });
+    } catch (error) {
+        console.error("Error in disease prediction:", error.message);
+        res.status(500).json({ error: "Failed to generate advisory." });
+    } finally {
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+    }
+});
+
+app.get("/api/v1/weatheralert", async (req, res) => {
+    try {
+        let { dist } = req.query;
+        if (!dist) {
+            return res.status(400).json({ error: "District (dist) is required" });
+        }
+        dist = dist.trim();
+        const weatherResponse = await axios.get(
+            `http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q=${dist}`
+        );
+
+        const data = weatherResponse.data;
+        if (!data || !data.current) {
+            return res.status(500).json({ error: "Weather data unavailable" });
+        }
+
+        const weatherData = {
+            location: data.location?.name || dist,
+            region: data.location?.region,
+            country: data.location?.country,
+            temperature: data.current.temp_c,
+            humidity: data.current.humidity,
+            rainfall: data.current.precip_mm,
+            condition: data.current.condition?.text,
+            icon: data.current.condition?.icon
+        };
+
+        res.json(weatherData);
+    } catch (error) {
+        console.error("Error fetching weather data:", error.message);
+        res.status(500).json({ error: "Failed to fetch weather data." });
     }
 });
 
