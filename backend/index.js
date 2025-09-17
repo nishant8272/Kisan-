@@ -38,7 +38,6 @@ const upload = multer({
         fileSize: 10 * 1024 * 1024 // 10MB limit
     },
     fileFilter: function (req, file, cb) {
-        // Check if file is an image
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
@@ -109,8 +108,6 @@ app.post('/api/v1/signin', async (req, res) => {
         return res.status(500).json({ error: "Internal server error" });
     }
 })
-
-
 
 app.post("/api/v1/diseasePredict", upload.single('image'), async (req, res) => {
     try {
@@ -227,7 +224,7 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
         //     return res.status(404).json({ error: `No data found for district: ${dist}` });
         // }
         const mongooseDoc = await Data.findOne({
-            district: { $regex: new RegExp(`^${dist}$`, 'i') }
+            District_Name: { $regex: new RegExp(`^${dist}$`, 'i') }
         });
 
         if (!mongooseDoc) {
@@ -235,10 +232,10 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
         }
         const districtData = mongooseDoc.toObject();
         console.log("Plain data object:", districtData);
-        console.log("Kharif Defaults:", districtData.Kharif_Defaults); 
+        console.log("Kharif Defaults:", districtData.Kharif_Defaults);
 
         const weatherResponse = await axios.get(
-            "http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q={dist}"
+            `http://api.weatherapi.com/v1/current.json?key=3ad23bda0dec40069df193439251409&q=${dist}`
         );
         const humidity = weatherResponse.data?.current?.humidity;
         const temperature = weatherResponse.data?.current?.temp_c;
@@ -248,10 +245,10 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
         }
 
         const response = await axios.post("http://localhost:5000/predict_crop", {
-            N: districtData.N,
-            P: districtData.P,
-            K: districtData.K,
-            ph: districtData.ph,
+            N: districtData.N_Value,
+            P: districtData.P_Value,
+            K: districtData.K_Value,
+            ph: districtData.pH_Value,
             temperature,
             humidity,
             rainfall
@@ -259,21 +256,21 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
 
         const modelPrediction = response.data.recommended_crop;
         console.log("Model's Raw Prediction:", modelPrediction);
-        let finalRecommendation = modelPrediction; // Start with the model's prediction
+        let finalRecommendation = modelPrediction;
 
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth(); // 0 = January, 1 = February, etc.
 
         const rabiCrops = ['Wheat', 'Mustard', 'Garlic', 'ChickPea', 'Lentil', 'Peas', 'Barley'];
         const kharifCrops = ['Rice', 'Maize', 'Sugarcane', 'Cotton', 'PigeonPeas', 'Jute', 'MothBeans'];
-        
+
         if (currentMonth >= 5 && currentMonth <= 9) {
             if (!kharifCrops.includes(modelPrediction)) {
-                finalRecommendation = `Prediction uncertain. Common options in ${dist} are: ${districtData.Kharif_Defaults}`;
+                finalRecommendation = `${districtData.Kharif_Defaults}`;
             }
         } else {
             if (!rabiCrops.includes(modelPrediction)) {
-                finalRecommendation = `Prediction uncertain. Common options in ${dist} are: ${districtData.Rabi_Defaults}`;
+                finalRecommendation = `${districtData.Rabi_Defaults}`;
             }
         }
         return res.json({

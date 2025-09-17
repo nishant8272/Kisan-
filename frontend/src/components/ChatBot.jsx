@@ -2,8 +2,28 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bot, X, SendHorizonal, LoaderCircle, Mic, Volume2, VolumeX } from 'lucide-react';
 
+const getBotResponse = (userInput) => {
+    const text = userInput.toLowerCase();
+    if (text.includes('hello') || text.includes('hi')) {
+        return 'Hello! How can I assist you with your farming needs today? You can ask me about fertilizers, irrigation, or crop diseases.';
+    }
+    if (text.includes('fertilizer')) {
+        return 'For better yield, a balanced N-P-K (Nitrogen, Phosphorus, Potassium) fertilizer is recommended. The exact ratio depends on your soil test results and the crop you are growing.';
+    }
+    if (text.includes('irrigation') || text.includes('water')) {
+        return 'Drip irrigation is highly efficient for most crops as it minimizes water evaporation and delivers water directly to the plant roots. Watering in the early morning is ideal.';
+    }
+    if (text.includes('disease') || text.includes('pest')) {
+        return 'Early detection is key. You can use our "Disease Prediction" tool by uploading a photo of the leaf. Common organic pesticides include neem oil spray.';
+    }
+    if (text.includes('thank')) {
+        return 'You\'re welcome! Is there anything else I can help you with?';
+    }
+    return "I'm sorry, I'm not sure how to answer that yet. Try asking about fertilizers, irrigation, or pests.";
+};
 // API endpoint for the chatbot backend
 const CHATBOT_API_URL = "http://localhost:3000/chat";
+
 
 export const Chatbot = () => {
     const [isOpen, setIsOpen] = useState(false);

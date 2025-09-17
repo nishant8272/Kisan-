@@ -7,19 +7,16 @@ export function Prediction() {
     const [isDragging, setIsDragging] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState(null);
-    
-    // API configuration
     const API_BASE_URL = 'http://localhost:3000';
 
-    // Handles file selection from the file input dialog
+
     const handleFileChange = (e) => {
         const file = e.target.files[0];
         if (file && file.type.startsWith("image/")) {
             setSelectedFile(file);
             setPreview(URL.createObjectURL(file));
-            setResult(null); // Clear previous results
+            setResult(null);
         } else {
-            // Optional: handle non-image file selection
             alert("Please select an image file (PNG, JPG, JPEG).");
         }
     };
@@ -31,9 +28,8 @@ export function Prediction() {
         setResult(null);
     };
 
-    // --- Drag and Drop Handlers ---
     const handleDragOver = (e) => {
-        e.preventDefault(); // Necessary to allow dropping
+        e.preventDefault(); 
         setIsDragging(true);
     };
 
@@ -53,7 +49,6 @@ export function Prediction() {
         }
     };
     
-    // --- Form Submission Handler ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedFile) {
@@ -64,11 +59,9 @@ export function Prediction() {
         setResult(null);
 
         try {
-            // Create FormData to send the file
             const formData = new FormData();
             formData.append('image', selectedFile);
 
-            // Make API call to the backend
             const response = await fetch(`${API_BASE_URL}/api/v1/diseasePredict`, {
                 method: 'POST',
                 body: formData,
@@ -81,7 +74,6 @@ export function Prediction() {
             }
 
             if (data.success && data.prediction) {
-                // Format the prediction result for display
                 const prediction = data.prediction;
                 setResult({
                     disease: prediction.predicted_class || 'Unknown Disease',
