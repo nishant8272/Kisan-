@@ -257,7 +257,19 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
     }
 });
 
-
+app.post('/chat', async (req, res) => {
+    const { query } = req.body; 
+    if (!query) {
+        return res.status(400).json({ error: "Query is required" });
+    }
+    try {
+      const response = await axios.post('http://localhost:5000/chat', { query });
+      res.json({ answer: response.data.answer });
+    } catch (error) {   
+        console.error('Error communicating with chatbot service:', error.message);
+        res.status(500).json({ error: "Failed to get response from chatbot service" });
+    }
+});
 
 async function main() {
     if (process.env.MONGODB_URL === undefined) {
