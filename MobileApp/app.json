@@ -1,12 +1,13 @@
 {
   "expo": {
-    "name": "SmartFarmerAssistant",
-    "slug": "SmartFarmerAssistant",
+    "name": "MobileApp",
+    "slug": "MobileApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobileapp",
     "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -16,13 +17,13 @@
       "supportsTablet": true
     },
     "android": {
-      // NOTE: Required for development to connect to a local server.
-      // For production, you should use HTTPS or configure network security.
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
@@ -30,21 +31,11 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      [
-        "@react-native-voice/voice",
-        {
-          "microphonePermission": "Allow SmartFarmerAssistant to access the microphone to answer your voice questions.",
-          "speechRecognitionPermission": "Allow SmartFarmerAssistant to recognize your speech to convert it into text."
-        }
-      ]
+      "expo-router",
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
-    },
-    "extra": {
-      "eas": {
-        "projectId": "df6d1385-c4bf-4651-a233-abdebbf9e598"
-      }
     }
   }
 }

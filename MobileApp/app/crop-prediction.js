@@ -6,16 +6,15 @@ import * as Location from 'expo-location';
 import MapView, { Marker } from 'react-native-maps';
 
 // IMPORTANT: Replace with your computer's local IP address and port.
-const API_URL = 'http://192.168.1.5:3000'; 
+const API_URL = 'http://192.168.84.231:3000'; 
 
 export default function CropPredictionScreen() {
-    const [location, setLocation] = useState(null); // Stores { latitude, longitude }
+    const [location, setLocation] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const theme = useTheme();
 
-    // Default map position (Meerut, India)
     const initialRegion = {
         latitude: 28.9845,
         longitude: 77.7064,
@@ -25,86 +24,81 @@ export default function CropPredictionScreen() {
 
     const handleGetCurrentLocation = async () => {
         setIsLocating(true);
-        setResult(null); // Clear previous results
-
+        setResult(null);
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Permission to access location was denied. Please enable it in your device settings.');
+            Alert.alert('Permission Denied', 'Permission to access location was denied.');
             setIsLocating(false);
             return;
         }
-
         try {
             const position = await Location.getCurrentPositionAsync({});
             setLocation(position.coords);
         } catch (error) {
-            Alert.alert('Error', 'Could not fetch your current location. Please try again.');
+            Alert.alert('Error', 'Could not fetch your current location.');
         } finally {
             setIsLocating(false);
         }
     };
     
     const handleMapPress = (e) => {
-        // Get coordinates from map press event
         const { latitude, longitude } = e.nativeEvent.coordinate;
         setLocation({ latitude, longitude });
-        setResult(null); // Clear previous results
+        setResult(null);
     };
-// Replace your old handlePredict function with this one
-const handlePredict = async () => {
-  if (!location) {
-      Alert.alert('Location Needed', 'Please select a location on the map or use your current location first.');
-      return;
-  }
-  setLoading(true);
-  setResult(null);
 
-  try {
-      console.log("1. Starting prediction for:", location);
-
-      // Step 1: Get the district name from your reverse-geocode API
-      const geoResponse = await fetch(`${API_URL}/api/reverse-geocode?lat=${location.latitude}&lon=${location.longitude}`);
-      
-      console.log("2. Geo response status:", geoResponse.status);
-      if (!geoResponse.ok) {
-          throw new Error(`Could not get location details. Server responded with ${geoResponse.status}`);
-      }
-      
-      const geoData = await geoResponse.json();
-      console.log("3. Geo data received:", JSON.stringify(geoData, null, 2));
-      
-      const district = geoData?.address?.state_district;
-      console.log("4. Extracted district:", district);
-
-      if (!district) {
-          throw new Error('Could not determine the district from the location data. Check the geo data structure.');
-      }
-
-      // Step 2: Get the crop prediction using the district
-      const cropResponse = await fetch(`${API_URL}/api/v1/crop_prediction?dist=${district}`);
-      
-      console.log("5. Crop response status:", cropResponse.status);
-      if (!cropResponse.ok) {
-          throw new Error(`Failed to get crop prediction. Server responded with ${cropResponse.status}`);
-      }
-      
-      const predictionData = await cropResponse.json();
-      console.log("6. Prediction data received:", JSON.stringify(predictionData, null, 2));
-
-      // Format the data to match the UI structure
-      setResult(predictionData);
-      console.log("7. Success! Result has been set.");
-
-  } catch (error) {
-      // This will now log the full error object to your terminal
-      console.error("PREDICTION FAILED:", error); 
-      Alert.alert('Prediction Failed', error.message);
-  } finally {
-      // This block will always run, ensuring the loader stops
-      console.log("8. Prediction process finished. Stopping loader.");
-      setLoading(false);
-  }
-};
+    const handlePredict = async () => {
+        if (!location) {
+            Alert.alert('Location Needed', 'Please select a location on the map or use your current location first.');
+            return;
+        }
+        setLoading(true);
+        setResult(null);
+    
+        try {
+            console.log("1. Starting prediction for:", location);
+    
+            const geoResponse = await fetch(`${API_URL}/api/reverse-geocode?lat=${location.latitude}&lon=${location.longitude}`);
+            console.log("2. Geo response status:", geoResponse.status);
+            if (!geoResponse.ok) throw new Error(`Could not get location details. Server responded with ${geoResponse.status}`);
+            
+            const geoData = await geoResponse.json();
+            console.log("3. Geo data received:", JSON.stringify(geoData, null, 2));
+            
+            const district = geoData?.address?.state_district;
+            console.log("4. Extracted district:", district);
+            if (!district) throw new Error('Could not determine the district from the location data.');
+    
+            const cropResponse = await fetch(`${API_URL}/api/v1/crop_prediction?dist=${district}`);
+            console.log("5. Crop response status:", cropResponse.status);
+            if (!cropResponse.ok) throw new Error(`Failed to get crop prediction. Server responded with ${cropResponse.status}`);
+            
+            const predictionData = await cropResponse.json();
+            console.log("6. Prediction data received:", JSON.stringify(predictionData, null, 2));
+    
+            // --- NEW: DATA TRANSFORMATION ---
+            const cropString = predictionData.crop || "";
+            const cropsArray = cropString.split(',').map(crop => crop.trim());
+    
+            const formattedResult = {
+                recommendations: cropsArray.map(cropName => ({
+                    crop: cropName,
+                    reason: `Suitable for ${district} based on soil and climate data.`
+                }))
+            };
+            // ---------------------------------
+            
+            setResult(formattedResult);
+            console.log("7. Success! Result has been set.");
+    
+        } catch (error) {
+            console.error("PREDICTION FAILED:", error); 
+            Alert.alert('Prediction Failed', error.message);
+        } finally {
+            console.log("8. Prediction process finished. Stopping loader.");
+            setLoading(false);
+        }
+    };
     
     return (
         <ScrollView
@@ -117,7 +111,6 @@ const handlePredict = async () => {
                     <Text style={styles.instructions}>
                         Use your current location or tap on the map to place a marker.
                     </Text>
-                    
                     <View style={styles.mapContainer}>
                         <MapView
                             style={styles.map}
@@ -127,13 +120,11 @@ const handlePredict = async () => {
                             {location && <Marker coordinate={location} />}
                         </MapView>
                     </View>
-
                     {location && (
                         <Text style={styles.locationText}>
                             Lat: {location.latitude.toFixed(4)}, Lon: {location.longitude.toFixed(4)}
                         </Text>
                     )}
-
                     <Button
                         mode="contained-tonal"
                         onPress={handleGetCurrentLocation}
@@ -209,7 +200,7 @@ const styles = StyleSheet.create({
     recCrop: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#2E7D32' // Primary color from your theme
+        color: '#2E7D32'
     },
     recReason: {
         fontSize: 14,

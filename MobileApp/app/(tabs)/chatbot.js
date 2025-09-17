@@ -5,16 +5,10 @@ import ChatBubble from '../components/ChatBubble'; // Ensure this path is correc
 import * as Speech from 'expo-speech';
 import Voice from '@react-native-voice/voice';
 
-// ------------------- IMPORTANT -------------------
-// Replace 'localhost' with your computer's local IP address.
-// Your computer and your phone MUST be on the same Wi-Fi network.
-// Example: const CHATBOT_API_URL = "http://192.168.1.5:3000/chat";
+// Your API URL - make sure this is correct
 const CHATBOT_API_URL = "http://192.168.84.231:3000/chat";
-// ---------------------------------------------------
 
 export default function ChatbotScreen() {
-    // The rest of your code is perfect and does not need changes.
-    // I am including it here for completeness.
     const theme = useTheme();
     const [messages, setMessages] = useState([
         { id: '1', text: 'Hello! Ask me about crop health, fertilizers, or irrigation.', sender: 'bot' },
@@ -24,66 +18,33 @@ export default function ChatbotScreen() {
     const [isListening, setIsListening] = useState(false);
     const flatListRef = useRef();
 
-    useEffect(() => {
-        const onSpeechResults = (e) => {
-            if (e.value && e.value.length > 0) {
-                setInput(e.value[0]);
-            }
-        };
-        const onSpeechEnd = () => setIsListening(false);
-        const onSpeechError = (e) => {
-            console.error('Speech recognition error', e);
-            Alert.alert("Voice Error", "Sorry, I couldn't understand that. Please try again.");
-            setIsListening(false);
-        };
-
-        Voice.onSpeechError = onSpeechError;
-        Voice.onSpeechResults = onSpeechResults;
-        Voice.onSpeechEnd = onSpeechEnd;
-
-        return () => {
-            Voice.destroy().then(Voice.removeAllListeners);
-        };
-    }, []);
-
-    const handleToggleListening = async () => {
-        try {
-            if (isListening) {
-                await Voice.stop();
-                setIsListening(false);
-            } else {
-                setInput('');
-                await Voice.start('en-US');
-                setIsListening(true);
-            }
-        } catch (e) {
-            console.error("Failed to toggle voice recognition", e);
-            Alert.alert("Voice Error", "Could not start the voice service. Check your permissions.");
+    // MODIFICATION 1: handleSend is now a parameter-based function
+    // This makes it reusable for both text input and voice input.
+    const handleSend = async (messageText) => {
+        if (!messageText || messageText.trim().length === 0) {
+            return; // Don't send empty messages
         }
-    };
 
-    const handleSend = async () => {
-        const currentInput = input;
-        if (currentInput.trim().length === 0) return;
-
-        Speech.stop();
-        const userMessage = { id: Date.now().toString(), text: currentInput, sender: 'user' };
+        Speech.stop(); // Stop any ongoing speech from the bot
+        const userMessage = { id: Date.now().toString(), text: messageText, sender: 'user' };
         setMessages(prev => [...prev, userMessage]);
-        setInput('');
+        setInput(''); // Clear the text input regardless of source
         setIsLoading(true);
 
         try {
             const response = await fetch(CHATBOT_API_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ query: currentInput }),
+                body: JSON.stringify({ query: messageText }),
             });
+
 
             if (!response.ok) {
                 throw new Error(`Server responded with status: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log("Chatbot API response:", data);
             const botResponseText = data.answer || "Sorry, I couldn't understand that.";
 
             const botMessage = { id: (Date.now() + 1).toString(), text: botResponseText, sender: 'bot' };
@@ -96,6 +57,50 @@ export default function ChatbotScreen() {
             setMessages(prev => [...prev, errorMessage]);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        // MODIFICATION 2: onSpeechResults now directly calls handleSend
+        const onSpeechResults = (e) => {
+            const recognizedText = e.value?.[0];
+            if (recognizedText) {
+                // This is the key for automatic sending!
+                handleSend(recognizedText);
+            }
+        };
+
+        const onSpeechEnd = () => setIsListening(false);
+        const onSpeechError = (e) => {
+            console.error('Speech recognition error', e);
+            Alert.alert("Voice Error", "Sorry, I couldn't understand that. Please try again.");
+            setIsListening(false);
+        };
+
+        Voice.onSpeechError = onSpeechError;
+        Voice.onSpeechResults = onSpeechResults;
+        Voice.onSpeechEnd = onSpeechEnd;
+
+        return () => {
+            Speech.stop();
+            Voice.destroy().then(Voice.removeAllListeners);
+        };
+    }, []); // Empty dependency array ensures this runs only once
+
+    const handleToggleListening = async () => {
+        // This function's logic remains the same: it just starts/stops listening.
+        try {
+            if (isListening) {
+                await Voice.stop();
+                setIsListening(false);
+            } else {
+                setInput('');
+                await Voice.start('en-US');
+                setIsListening(true);
+            }
+        } catch (e) {
+            console.error("Failed to toggle voice recognition", e);
+            Alert.alert("Voice Error", "Could not start the voice service. Check your permissions.");
         }
     };
     
@@ -122,21 +127,23 @@ export default function ChatbotScreen() {
                     placeholderTextColor="#9E9E9E"
                     value={input}
                     onChangeText={setInput}
-                    onSubmitEditing={handleSend}
+                    // MODIFICATION 3: Pass the text from the input state to handleSend
+                    onSubmitEditing={() => handleSend(input)} 
                     editable={!isLoading && !isListening}
                 />
-                <IconButton
+                {/* <IconButton
                     icon={isListening ? "microphone-off" : "microphone"}
                     iconColor={isListening ? theme.colors.error : theme.colors.primary}
                     size={28}
                     onPress={handleToggleListening}
                     disabled={isLoading}
-                />
+                /> */}
                 <IconButton
                     icon="send"
                     iconColor={theme.colors.primary}
                     size={28}
-                    onPress={handleSend}
+                    // MODIFICATION 4: Pass the text from the input state to handleSend
+                    onPress={() => handleSend(input)}
                     disabled={!input.trim() || isLoading || isListening}
                 />
             </View>
