@@ -1,17 +1,15 @@
-// file: app/(tabs)/index.js
+// file: app/(tabs)/index.js (Corrected)
+
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
-import { Text, useTheme } from 'react-native-paper';
+import { View, StyleSheet } from 'react-native';
+import { Text } from 'react-native-paper';
 import FeatureButton from '../components/FeatureButton';
+import Market from '../components/Market';
 
 export default function HomeScreen() {
-  const theme = useTheme();
-
-  return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      contentContainerStyle={styles.contentContainer}
-    >
+  // We will pass this entire block as the header
+  const renderHomeScreenHeader = () => (
+    <>
       <View style={styles.header}>
         <Text variant="headlineMedium" style={styles.title}>Welcome, Farmer!</Text>
         <Text variant="bodyLarge" style={styles.subtitle}>
@@ -39,17 +37,17 @@ export default function HomeScreen() {
         description="Get answers to your farming questions."
         href="/chatbot"
       />
-    </ScrollView>
+    </>
+  );
+
+  return (
+    // No ScrollView! The Market component's FlatList now controls everything.
+    <Market ListHeaderComponent={renderHomeScreenHeader()} />
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  contentContainer: {
-    padding: 20,
-  },
+  // These styles are for the header content we are passing in
   header: {
     marginBottom: 30,
     alignItems: 'center',

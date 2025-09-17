@@ -13,6 +13,9 @@ import { CropPrediction } from './Crop';
 import Header from './Header';
 import { Chatbot } from './ChatBot';
 import WeatherWidget from "./WeatherWidget";
+import Market from './Market';
+
+// FIX: Default Leaflet icon issue with modern bundlers
 // This code ensures that the marker icon images are loaded correctly.
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -255,97 +258,7 @@ export default function Landing() {
                 </section>
 
                 {/* ===== BEAUTIFIED MARKET RATE SECTION ===== */}
-                <section id="market-rates" className="py-20 bg-gradient-to-b from-green-50 to-white relative">
-                    <div className="container mx-auto px-6">
-                        {/* Heading */}
-                        <div className="text-center mb-12 max-w-3xl mx-auto">
-                            <span className="inline-block px-3 py-1 text-sm font-semibold bg-green-100 text-green-700 rounded-full mb-4">
-                                🌾 Current Updates
-                            </span>
-                            <h2 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-green-700 via-green-500 to-emerald-600 text-transparent bg-clip-text">
-                                Agricultural Market Prices
-                            </h2>
-                            <p className="text-gray-600 mt-4 text-lg">
-                                Search for your crop and explore the latest mandi prices across India.
-                            </p>
-
-                            {/* Search Input */}
-                            <form onSubmit={handleSearch} className="mt-8 flex justify-center max-w-2xl mx-auto">
-                                <div className="relative w-full">
-                                    <span className="absolute inset-y-0 left-3 flex items-center text-gray-400">
-                                        <Sprout className="h-5 w-5" />
-                                    </span>
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        placeholder="Enter crop name... (e.g., Wheat, Rice, Sugarcane)"
-                                        className="w-full pl-10 pr-20 py-4 rounded-full border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                                    />
-                                    <button
-                                        type="submit"
-                                        disabled={isLoading}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition disabled:bg-gray-400 flex items-center gap-2"
-                                    >
-                                        {isLoading ? <LoaderCircle className="animate-spin h-5 w-5" /> : <Search className="h-5 w-5" />}
-                                        <span className="hidden md:inline">Search</span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-
-                        {/* Results */}
-                        <div className="mt-12">
-                            {isLoading && (
-                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                    {[1, 2, 3].map((i) => (
-                                        <div key={i} className="h-48 bg-gray-200 rounded-xl animate-pulse"></div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {error && (
-                                <div className="text-center text-red-600 bg-red-100 p-4 rounded-lg max-w-md mx-auto">
-                                    ⚠️ {error}
-                                </div>
-                            )}
-
-                            {!isLoading && !error && marketData.length > 0 && (
-                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                    {marketData.map((data, index) => (
-                                        <div
-                                            key={index}
-                                            className="bg-white p-6 rounded-xl shadow-md border border-gray-200 hover:shadow-2xl hover:scale-[1.02] hover:border-green-500 transition-all duration-300"
-                                        >
-                                            <h4 className="text-2xl font-bold text-green-800">{data.market}</h4>
-                                            <p className="text-sm text-gray-500 mb-4">{data.state}</p>
-                                            <div className="space-y-2 text-gray-700">
-                                                <div className="flex justify-between">
-                                                    <span className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-gray-400" /> Min Price:</span>
-                                                    <span className="font-semibold">₹ {data.minPrice} / Quintal</span>
-                                                </div>
-                                                <div className="flex justify-between">
-                                                    <span className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-gray-400" /> Max Price:</span>
-                                                    <span className="font-semibold">₹ {data.maxPrice} / Quintal</span>
-                                                </div>
-                                                <div className="flex justify-between text-green-700">
-                                                    <span className="flex items-center gap-2 font-bold"><Leaf className="h-4 w-4" /> Avg Price:</span>
-                                                    <span className="font-bold text-lg">₹ {data.modalPrice} / Quintal</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {!isLoading && !error && marketData.length === 0 && (
-                                <div className="text-center text-gray-500 mt-8">
-                                    <p className="text-lg">🔍 Search for a crop above to see Current mandi prices.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </section>
+                <Market/>
 
                 {/* Why Choose Us Section */}
                 <section id="about" className="py-20 bg-gradient-to-r from-green-50 via-white to-green-50">

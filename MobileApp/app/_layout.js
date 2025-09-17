@@ -1,7 +1,7 @@
 // file: app/_layout.js
 import { Stack } from 'expo-router';
 import { PaperProvider } from 'react-native-paper';
-import { theme } from '../theme/theme';
+import { theme } from './theme/theme';
 
 export default function RootLayout() {
   return (
