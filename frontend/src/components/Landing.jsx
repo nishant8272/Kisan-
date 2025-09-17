@@ -12,8 +12,7 @@ import { Prediction } from './disease_pridiction';
 import { CropPrediction } from './Crop';
 import Header from './Header';
 import { Chatbot } from './ChatBot';
-
-// FIX: Default Leaflet icon issue with modern bundlers
+import WeatherWidget from "./WeatherWidget";
 // This code ensures that the marker icon images are loaded correctly.
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -64,14 +63,11 @@ const MarketRateCard = ({ market, state, minPrice, maxPrice, modalPrice }) => (
 
 export default function Landing() {
     const [activeTab, setActiveTab] = useState('recommendation');
-
-    // --- STATE FOR MARKET RATE SECTION ---
     const [searchQuery, setSearchQuery] = useState('');
     const [marketData, setMarketData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // --- MOCK API CALL SIMULATION ---
     // In a real app, this would be a fetch() call to your backend.
     const getMockMarketData = (cropName) => {
         return new Promise((resolve, reject) => {
@@ -238,6 +234,22 @@ export default function Landing() {
 
                                 {activeTab === 'prediction' && <Prediction />}
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ===== Weather Section ===== */}
+                <section id="weather" className="py-20 bg-gradient-to-r from-blue-50 via-white to-blue-50">
+                    <div className="container mx-auto px-6 text-center">
+                        <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+                            🌦️ Real-Time Weather Updates
+                        </h2>
+                        <p className="text-gray-600 mb-12 max-w-2xl mx-auto">
+                            Stay informed with the latest weather insights tailored for your farming location.
+                        </p>
+
+                        <div className="max-w-lg mx-auto">
+                        <WeatherWidget district="meerut" />
                         </div>
                     </div>
                 </section>
