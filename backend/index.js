@@ -47,13 +47,12 @@ const upload = multer({
 });
 
 app.post('/api/v1/signup', async (req, res) => {
-    console.log("hell")
     const { username, email, password } = req.body;
 
     // define zod schema for validation
     const signupzod = z.object({
         username: z.string(),
-        email: z.string(),
+        email: z.string(), 
         password: z.string().min(6).max(12),
     })
     const validate = signupzod.safeParse(req.body);
@@ -184,45 +183,21 @@ app.post("/api/v1/diseasePredict", upload.single('image'), async (req, res) => {
 app.get("/api/reverse-geocode", async (req, res) => {
     try {
         const { lat, lon } = req.query;
-        console.log("Incoming query:", req.query);
-    
-        const response = await axios.get("https://us1.locationiq.com/v1/reverse", {
-          params: {
-            key: "pk.bfd5fddfb2ac4ce5d7b2134950a5f453", // <-- your API key
-            lat,
-            lon,
-            format: "json"
-          },
-          headers: {
-            "User-Agent": "my-app/1.0 (myemail@example.com)" // required by LocationIQ
-          }
+        console.log(req.query)
+        const response = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+            params: { lat, lon, format: "json" },
+            headers: { "User-Agent": "my-app/1.0 (myemail@example.com)" }
         });
-    console.log(response.data)
-        // If you only care about district, extract it:
-        const district = response.data?.address?.state_district || response.data?.address?.county || null;
-    
-        res.json({
-          raw: response.data,
-          district
-        });
-      } catch (error) {
-        console.error("Error in reverse geocoding:", error.response?.data || error.message);
-        res.status(500).json({ error: "Failed to reverse geocode" });
-      }
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.get("/api/v1/crop_prediction", async (req, res) => {
     try {
         let dist = req.query.dist;
         dist = dist.trim();
-        // const districtData = await Data.findOne({
-        //     district: { $regex: new RegExp(`^${dist}$`, 'i') }
-        // });
-        // console.log("THE ACTUAL KEYS ARE:", Object.keys(districtData));
-
-        // if (!districtData) {
-        //     return res.status(404).json({ error: `No data found for district: ${dist}` });
-        // }
         const mongooseDoc = await Data.findOne({
             District_Name: { $regex: new RegExp(`^${dist}$`, 'i') }
         });
@@ -259,7 +234,7 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
         let finalRecommendation = modelPrediction;
 
         const currentDate = new Date();
-        const currentMonth = currentDate.getMonth(); // 0 = January, 1 = February, etc.
+        const currentMonth = currentDate.getMonth(); 
 
         const rabiCrops = ['Wheat', 'Mustard', 'Garlic', 'ChickPea', 'Lentil', 'Peas', 'Barley'];
         const kharifCrops = ['Rice', 'Maize', 'Sugarcane', 'Cotton', 'PigeonPeas', 'Jute', 'MothBeans'];
@@ -282,27 +257,14 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
     }
 });
 
-app.post('/chat', async (req, res) => {
-    const { query } = req.body; 
-    if (!query) {
-        return res.status(400).json({ error: "Query is required" });
-    }
-    try {
-      const response = await axios.post('http://localhost:5000/chat', { query });
-      res.json({ answer: response.data.answer });
-    } catch (error) {   
-        console.error('Error communicating with chatbot service:', error.message);
-        res.status(500).json({ error: "Failed to get response from chatbot service" });
-    }
-});
+
 
 async function main() {
     if (process.env.MONGODB_URL === undefined) {
         throw new Error("MONGODB_URL is not defined");
     }
-    console.log("hello")
     await mongoose.connect(process.env.MONGODB_URL).then(() => {
-        console.log("connect")
+        console.log
     });
     app.listen(PORT, () => {
         console.log("Server is running on port 3000");
