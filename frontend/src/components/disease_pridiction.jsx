@@ -133,7 +133,7 @@ export function Prediction() {
                 </div>
             )}
 
-            {/* --- File Input & Dropzone --- */}
+            {/* File Input & Dropzone */}
             <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -142,7 +142,7 @@ export function Prediction() {
                     isDragging ? 'border-green-600 bg-green-50' : 'border-gray-300 hover:border-green-500'
                 }`}
             >
-                {/* --- Image Preview --- */}
+                {/* Image Preview*/}
                 {preview ? (
                     <>
                         <img src={preview} alt="Selected leaf" className="w-full h-48 object-contain mx-auto rounded-md" />
@@ -172,7 +172,7 @@ export function Prediction() {
                 </p>
             )}
 
-            {/* --- Submit Button --- */}
+            {/* Submit Button */}
             <button
                 type="submit"
                 disabled={!selectedFile || isLoading}
@@ -188,7 +188,7 @@ export function Prediction() {
                 )}
             </button>
             
-            {/* --- Result Display --- */}
+            {/* Result Display */}
             {result && (
                 <div className={`mt-8 text-left p-6 rounded-lg border ${
                     result.disease === 'Error' 

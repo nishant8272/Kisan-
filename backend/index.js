@@ -47,13 +47,12 @@ const upload = multer({
 });
 
 app.post('/api/v1/signup', async (req, res) => {
-    console.log("hell")
     const { username, email, password } = req.body;
 
     // define zod schema for validation
     const signupzod = z.object({
         username: z.string(),
-        email: z.string(),
+        email: z.string(), 
         password: z.string().min(6).max(12),
     })
     const validate = signupzod.safeParse(req.body);
@@ -215,14 +214,6 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
     try {
         let dist = req.query.dist;
         dist = dist.trim();
-        // const districtData = await Data.findOne({
-        //     district: { $regex: new RegExp(`^${dist}$`, 'i') }
-        // });
-        // console.log("THE ACTUAL KEYS ARE:", Object.keys(districtData));
-
-        // if (!districtData) {
-        //     return res.status(404).json({ error: `No data found for district: ${dist}` });
-        // }
         const mongooseDoc = await Data.findOne({
             District_Name: { $regex: new RegExp(`^${dist}$`, 'i') }
         });
@@ -259,7 +250,7 @@ app.get("/api/v1/crop_prediction", async (req, res) => {
         let finalRecommendation = modelPrediction;
 
         const currentDate = new Date();
-        const currentMonth = currentDate.getMonth(); // 0 = January, 1 = February, etc.
+        const currentMonth = currentDate.getMonth(); 
 
         const rabiCrops = ['Wheat', 'Mustard', 'Garlic', 'ChickPea', 'Lentil', 'Peas', 'Barley'];
         const kharifCrops = ['Rice', 'Maize', 'Sugarcane', 'Cotton', 'PigeonPeas', 'Jute', 'MothBeans'];
