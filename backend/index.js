@@ -297,7 +297,7 @@ async function main() {
         throw new Error("MONGODB_URL is not defined");
     }
     await mongoose.connect(process.env.MONGODB_URL).then(() => {
-        console.log
+        console.log("connect");
     });
     app.listen(PORT, () => {
         console.log("Server is running on port 3000");
